@@ -1,0 +1,160 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyOm1TrInlGRkQ/EdLnhO+ze",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/akash155/M.P.AKASH/blob/master/COST%20MINIMISATION%20IN%20PRODUCTION%20SCHEDULING%20WITH%20PYTHON\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 28,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "DltO67JRViXG",
+        "outputId": "94874ebb-8650-45c0-882d-ef531f26c986"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Zone Average Delivery Cost:\n",
+            "Zone\n",
+            "Central     880.0\n",
+            "North      1361.5\n",
+            "South       888.0\n",
+            "Name: Delivery Cost, dtype: float64\n",
+            "\n",
+            "Zone Profit:\n",
+            "Zone\n",
+            "Central    770.0\n",
+            "North      288.5\n",
+            "South      762.0\n",
+            "Name: Delivery Cost, dtype: float64\n",
+            "\n",
+            "Example Route Cost:\n",
+            "Total cost for sample route: $2723.00\n"
+          ]
+        }
+      ],
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Sample data\n",
+        "customer_data = {\n",
+        "    \"Customer ID\": [1001, 1002, 1003, 1004, 1005, 1006],\n",
+        "    \"Zone\": [\"North\", \"Central\", \"South\", \"North\", \"Central\", \"South\"],\n",
+        "    \"Address\": [\n",
+        "        \"100 Main St, North Thanjavur\", \"25 Green Ave, Central Thanjavur\",\n",
+        "        \"5 Pine Rd, South Thanjavur\", \"15 Elm St, North Thanjavur\",\n",
+        "        \"8 Maple Lane, Central Thanjavur\", \"12 S.N.M, South Thanjavur\"\n",
+        "    ],\n",
+        "    \"Consumption\": [5, 8, 3, 6, 2, 1]\n",
+        "}\n",
+        "\n",
+        "delivery_data = {\n",
+        "    \"Delivery ID\": [2001, 2002, 2003, 2004, 2005],\n",
+        "    \"Zone\": [\"North\", \"Central\", \"South\", \"North\", \"Central\"],\n",
+        "    \"Driver ID\": [\"DR1\", \"DR2\", \"DR3\", \"DR1\", \"DR2\"],\n",
+        "    \"No. of Cylinders\": [4, 7, 2, 8, 3],\n",
+        "    \"Delivery Cost\": [\"Rs.1250\", \"Rs.990\", \"Rs.888\", \"Rs.1473\", \"Rs.770\"]\n",
+        "}\n",
+        "\n",
+        "# Function to convert string delivery cost to float\n",
+        "def convert_cost(cost_str):\n",
+        "    return float(cost_str.strip(\"Rs.\"))\n",
+        "\n",
+        "# Load data into DataFrames\n",
+        "customers_df = pd.DataFrame(customer_data)\n",
+        "deliveries_df = pd.DataFrame(delivery_data)\n",
+        "\n",
+        "# Convert 'Delivery Cost' to float\n",
+        "deliveries_df[\"Delivery Cost\"] = deliveries_df[\"Delivery Cost\"].apply(convert_cost)\n",
+        "\n",
+        "# Customer Segmentation (HC > 5 cylinders/month)\n",
+        "def segment_customer(consumption):\n",
+        "    if consumption > 5:\n",
+        "        return \"HC (High Consumption)\"\n",
+        "    elif consumption > 2:\n",
+        "        return \"MC (Medium Consumption)\"\n",
+        "    else:\n",
+        "        return \"LC (Low Consumption)\"\n",
+        "\n",
+        "customers_df[\"Segment\"] = customers_df[\"Consumption\"].apply(segment_customer)\n",
+        "\n",
+        "# Merge customer and delivery data\n",
+        "merged_df = pd.merge(customers_df, deliveries_df, on=\"Zone\")\n",
+        "\n",
+        "# Calculate average delivery cost per cylinder for each zone\n",
+        "zone_avg_cost = merged_df.groupby(\"Zone\")[\"Delivery Cost\"].mean()\n",
+        "\n",
+        "# Assume selling price per cylinder\n",
+        "selling_price = 1650\n",
+        "\n",
+        "# Calculate profit per cylinder for each zone\n",
+        "zone_profit = selling_price - zone_avg_cost\n",
+        "\n",
+        "# Simplified Distance Matrix\n",
+        "distance_matrix = {\n",
+        "    \"North\": {\"North\": 0, \"Central\": 10, \"South\": 15},\n",
+        "    \"Central\": {\"North\": 10, \"Central\": 0, \"South\": 5},\n",
+        "    \"South\": {\"North\": 15, \"Central\": 5, \"South\": 0}\n",
+        "}\n",
+        "\n",
+        "# Function to calculate total delivery cost for a route\n",
+        "def calculate_route_cost(route, zone_costs):\n",
+        "    total_cost = 0\n",
+        "    prev_zone = None\n",
+        "    for customer in route:\n",
+        "        zone = customer[\"Zone\"]\n",
+        "        if prev_zone:\n",
+        "            total_cost += distance_matrix[prev_zone][zone]\n",
+        "        total_cost += zone_costs[zone]\n",
+        "        prev_zone = zone\n",
+        "    return total_cost\n",
+        "\n",
+        "# Example usage (assuming route is a list of customer dictionaries)\n",
+        "route = [\n",
+        "    {\"Customer ID\": 1001, \"Zone\": \"North\"},\n",
+        "    {\"Customer ID\": 1004, \"Zone\": \"North\"}\n",
+        "]\n",
+        "\n",
+        "# Calculate total route cost\n",
+        "total_route_cost = calculate_route_cost(route, zone_avg_cost.to_dict())\n",
+        "\n",
+        "# Print results\n",
+        "print(\"Zone Average Delivery Cost:\")\n",
+        "print(zone_avg_cost)\n",
+        "\n",
+        "print(\"\\nZone Profit:\")\n",
+        "print(zone_profit)\n",
+        "\n",
+        "print(\"\\nExample Route Cost:\")\n",
+        "print(f\"Total cost for sample route: ${total_route_cost:.2f}\")\n"
+      ]
+    }
+  ]
+}

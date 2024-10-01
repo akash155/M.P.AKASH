@@ -2,7 +2,6 @@
 
         "import pandas as pd\n",
         "\n",
-        "# Sample data\n",
         "customer_data = {\n",
         "    \"Customer ID\": [1001, 1002, 1003, 1004, 1005, 1006],\n",
         "    \"Zone\": [\"North\", \"Central\", \"South\", \"North\", \"Central\", \"South\"],\n",
